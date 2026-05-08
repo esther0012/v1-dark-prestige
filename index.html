@@ -1,6 +1,4 @@
 <!DOCTYPE html>
-
-
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -8,6 +6,7 @@
 <title>Referência Capital — Invista em Imóveis no Brasil</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/css/intlTelInput.css">
 <style>
 :root {
   --green: #0D2B1E;
@@ -159,6 +158,48 @@ footer{background:#080F0A;padding:60px 80px;border-top:1px solid rgba(201,168,76
 .footer-col p,.footer-col a{font-size:13px;color:var(--text-muted);line-height:1.8;text-decoration:none;display:block;}
 .footer-bottom{border-top:1px solid rgba(201,168,76,0.1);padding-top:24px;font-size:12px;color:rgba(245,239,224,0.3);}
 
+.iti {
+  width: 100%;
+  display: block;
+}
+
+.iti input,
+.iti input[type="tel"] {
+  width: 100% !important;
+  background: rgba(255,255,255,0.04) !important;
+  border: 1px solid rgba(201,168,76,0.2) !important;
+  color: var(--cream) !important;
+  padding: 14px 18px 14px 90px !important;
+  font-size: 14px !important;
+  font-family: 'Lato', sans-serif !important;
+  outline: none !important;
+}
+
+.iti input:focus {
+  border-color: var(--gold) !important;
+}
+
+.iti__selected-flag {
+  background: transparent !important;
+}
+
+.iti__flag-container {
+  color: #000;
+}
+
+.iti__country-list {
+  color: #000;
+  z-index: 9999;
+}
+
+.iti__country {
+  color: #000;
+}
+
+.iti__dial-code {
+  color: #555;
+}
+
 @media(max-width:900px){
   nav{padding:18px 24px;}
   .hero{grid-template-columns:1fr;min-height:auto;}
@@ -278,7 +319,7 @@ footer{background:#080F0A;padding:60px 80px;border-top:1px solid rgba(201,168,76
       <label>Capacidade de investimento mensal</label>
       <select name="capacidadeInvestimento" required>
         <option value="">Selecione uma opção</option>
-        <option value="Até R$2.000">Até R$2.000</option>
+        <option value="De R$1.000 a R$2.000">De R$1.000 a R$2.000</option>
         <option value="De R$2.000 a R$3.000">De R$2.000 a R$3.000</option>
         <option value="De R$3.000 a R$5.000">De R$3.000 a R$5.000</option>
         <option value="Acima de R$5.000">Acima de R$5.000</option>
@@ -286,7 +327,7 @@ footer{background:#080F0A;padding:60px 80px;border-top:1px solid rgba(201,168,76
     </div>
     <div class="form-group">
       <label>Telefone / WhatsApp</label>
-      <input type="tel" name="telefone" placeholder="+1 (000) 000-0000" required>
+      <input type="tel" id="telefone" name="telefone" placeholder="Digite seu WhatsApp" required>
     </div>
     <button type="submit" class="submit-btn">Quero ser Contatado →</button>
   </form>
@@ -473,80 +514,177 @@ footer{background:#080F0A;padding:60px 80px;border-top:1px solid rgba(201,168,76
   </div>
 </footer>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/intlTelInput.min.js"></script>
+<script src="https://unpkg.com/libphonenumber-js@1.10.60/bundle/libphonenumber-js.min.js"></script>
+
 <script>
-  document.getElementById('FORM').addEventListener('submit', async function(event) {
-    event.preventDefault();
+  document.addEventListener('DOMContentLoaded', function() {
+    const telefoneInput = document.querySelector('#telefone');
+    const form = document.getElementById('FORM');
 
-    const form = event.target;
-
-    const webhookUrl = 'https://nitro-app.referenciacapital.tech/webhook/leadsLP';
-    const obrigadoUrl = 'https://referenciacapital.com.br/investimento-estrangeiros-obrigado/';
-
-    function getCookie(name) {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop().split(';').shift();
-      return '';
+    if (!telefoneInput || !form || typeof window.intlTelInput !== 'function') {
+      console.error('intl-tel-input não carregou corretamente.');
+      return;
     }
 
-    function getUrlParams() {
-      const params = new URLSearchParams(window.location.search);
+    const iti = window.intlTelInput(telefoneInput, {
+      initialCountry: 'br',
+      preferredCountries: ['br', 'us', 'pt', 'ca', 'gb', 'jp', 'ae'],
+      separateDialCode: true,
+      nationalMode: true,
+      autoPlaceholder: 'aggressive',
+      formatOnDisplay: true
+    });
 
-      return {
-        utmSource: window.location.href,
-        utm_source: params.get('utm_source') || '',
-        utm_medium: params.get('utm_medium') || '',
-        utm_campaign: params.get('utm_campaign') || '',
-        utm_content: params.get('utm_content') || '',
-        utm_term: params.get('utm_term') || '',
-        utm_id: params.get('utm_id') || '',
-        fbclid: params.get('fbclid') || ''
-      };
+    function formatarTelefoneInternacional() {
+      const paisSelecionado = iti.getSelectedCountryData();
+      const paisIso2 = paisSelecionado.iso2 ? paisSelecionado.iso2.toUpperCase() : 'BR';
+      const apenasNumeros = telefoneInput.value.replace(/\D/g, '');
+
+      if (!apenasNumeros) {
+        telefoneInput.value = '';
+        return;
+      }
+
+      if (window.libphonenumber && window.libphonenumber.AsYouType) {
+        const formatter = new window.libphonenumber.AsYouType(paisIso2);
+        telefoneInput.value = formatter.input(apenasNumeros);
+      } else {
+        telefoneInput.value = apenasNumeros;
+      }
     }
 
-    const urlParams = getUrlParams();
+    function dispararEventoPixelPorInvestimento(capacidadeInvestimento) {
+      if (typeof fbq !== 'function') {
+        return;
+      }
 
-    const payload = {
-      nome: form.querySelector('[name="nome"]')?.value || '',
-      telefone: form.querySelector('[name="telefone"]')?.value || '',
-      capacidadeInvestimento: form.querySelector('[name="capacidadeInvestimento"]')?.value || '',
-      produto: 'Consórcio Exterior',
-
-      utmSource: urlParams.utmSource,
-      utm_source: urlParams.utm_source,
-      utm_medium: urlParams.utm_medium,
-      utm_campaign: urlParams.utm_campaign,
-      utm_content: urlParams.utm_content,
-      utm_term: urlParams.utm_term,
-      utm_id: urlParams.utm_id,
-      fbclid: urlParams.fbclid,
-
-      _fbc: getCookie('_fbc'),
-      _fbp: getCookie('_fbp'),
-
-      trafficSource: urlParams.utm_source ? 'Paid' : 'Organic',
-      first_traffic_source: urlParams.utm_source ? 'Paid' : 'Organic',
-      pagina: window.location.href
-    };
-
-    if (typeof fbq === 'function') {
       fbq('track', 'Lead');
+
+      const eventosPorInvestimento = {
+        'De R$1.000 a R$2.000': 'Lead Low WordP',
+        'De R$2.000 a R$3.000': 'Lead Medium WordP',
+        'De R$3.000 a R$5.000': 'Lead High WordP',
+        'Acima de R$5.000': 'Lead Very High WordP'
+      };
+
+      const nomeEvento = eventosPorInvestimento[capacidadeInvestimento];
+
+      if (nomeEvento) {
+        fbq('trackCustom', nomeEvento, {
+          capacidadeInvestimento: capacidadeInvestimento,
+          produto: 'Consórcio Exterior'
+        });
+      }
     }
 
-    try {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': 'n8n.uA5GXxCvJrsexY$et9PyrScGy-nitro'
-        },
-        body: JSON.stringify(payload)
-      });
-    } catch (error) {
-      console.error('Erro ao enviar lead para o webhook:', error);
-    }
+    telefoneInput.addEventListener('input', formatarTelefoneInternacional);
 
-    window.location.href = obrigadoUrl;
+    telefoneInput.addEventListener('countrychange', function() {
+      telefoneInput.value = '';
+      telefoneInput.focus();
+    });
+
+    form.addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const webhookUrl = 'https://nitro-app.referenciacapital.tech/webhook/leadsLP';
+      const obrigadoUrl = 'https://referenciacapital.com.br/investimento-estrangeiros-obrigado/';
+
+      function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return '';
+      }
+
+      function getUrlParams() {
+        const params = new URLSearchParams(window.location.search);
+
+        return {
+          utmSource: window.location.href,
+          utm_source: params.get('utm_source') || '',
+          utm_medium: params.get('utm_medium') || '',
+          utm_campaign: params.get('utm_campaign') || '',
+          utm_content: params.get('utm_content') || '',
+          utm_term: params.get('utm_term') || '',
+          utm_id: params.get('utm_id') || '',
+          fbclid: params.get('fbclid') || ''
+        };
+      }
+
+      const urlParams = getUrlParams();
+      const paisSelecionado = iti.getSelectedCountryData();
+      const paisIso2 = paisSelecionado.iso2 ? paisSelecionado.iso2.toUpperCase() : 'BR';
+
+      const capacidadeInvestimento = form.elements['capacidadeInvestimento']
+              ? form.elements['capacidadeInvestimento'].value
+              : '';
+
+      let telefoneCompleto = telefoneInput.value;
+
+      if (telefoneInput.value.trim() && window.libphonenumber) {
+        try {
+          const phoneNumber = window.libphonenumber.parsePhoneNumberFromString(
+                  telefoneInput.value,
+                  paisIso2
+          );
+
+          if (phoneNumber && phoneNumber.isValid()) {
+            telefoneCompleto = phoneNumber.number;
+          } else {
+            telefoneCompleto = '+' + paisSelecionado.dialCode + telefoneInput.value.replace(/\D/g, '');
+          }
+        } catch (error) {
+          telefoneCompleto = '+' + paisSelecionado.dialCode + telefoneInput.value.replace(/\D/g, '');
+        }
+      }
+
+      dispararEventoPixelPorInvestimento(capacidadeInvestimento);
+
+      const payload = {
+        nome: form.elements['nome'] ? form.elements['nome'].value : '',
+        telefone: telefoneCompleto,
+        capacidadeInvestimento: capacidadeInvestimento,
+
+        produto: 'Consórcio Exterior',
+
+        ddi: paisSelecionado.dialCode ? '+' + paisSelecionado.dialCode : '',
+        pais: paisSelecionado.name || '',
+        paisIso2: paisSelecionado.iso2 || '',
+
+        utmSource: urlParams.utmSource,
+        utm_source: urlParams.utm_source,
+        utm_medium: urlParams.utm_medium,
+        utm_campaign: urlParams.utm_campaign,
+        utm_content: urlParams.utm_content,
+        utm_term: urlParams.utm_term,
+        utm_id: urlParams.utm_id,
+        fbclid: urlParams.fbclid,
+
+        _fbc: getCookie('_fbc'),
+        _fbp: getCookie('_fbp'),
+
+        trafficSource: urlParams.utm_source ? 'Paid' : 'Organic',
+        first_traffic_source: urlParams.utm_source ? 'Paid' : 'Organic',
+        pagina: window.location.href
+      };
+
+      try {
+        await fetch(webhookUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'api-key': 'n8n.uA5GXxCvJrsexY$et9PyrScGy-nitro'
+          },
+          body: JSON.stringify(payload)
+        });
+      } catch (error) {
+        console.error('Erro ao enviar lead para o webhook:', error);
+      }
+
+      window.location.href = obrigadoUrl;
+    });
   });
 </script>
 </body>
